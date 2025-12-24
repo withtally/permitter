@@ -15,22 +15,25 @@ interface ICredentialRegistry {
   /// @param ccid The cross-chain identity
   /// @param credentialTypeId The type of credential
   /// @return isExpired True if the credential is expired or doesn't exist
-  function isCredentialExpired(
-    bytes32 ccid,
-    bytes32 credentialTypeId
-  ) external view returns (bool isExpired);
+  function isCredentialExpired(bytes32 ccid, bytes32 credentialTypeId)
+    external
+    view
+    returns (bool isExpired);
 
   /// @notice Gets a credential for a CCID
   /// @param ccid The cross-chain identity
   /// @param credentialTypeId The type of credential to retrieve
   /// @return credential The credential data
-  function getCredential(
-    bytes32 ccid,
-    bytes32 credentialTypeId
-  ) external view returns (Credential memory credential);
+  function getCredential(bytes32 ccid, bytes32 credentialTypeId)
+    external
+    view
+    returns (Credential memory credential);
 
   /// @notice Gets all credential types for a CCID
   /// @param ccid The cross-chain identity
   /// @return credentialTypeIds Array of credential type IDs
-  function getCredentialTypes(bytes32 ccid) external view returns (bytes32[] memory credentialTypeIds);
+  function getCredentialTypes(bytes32 ccid)
+    external
+    view
+    returns (bytes32[] memory credentialTypeIds);
 }

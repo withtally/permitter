@@ -13,7 +13,7 @@ contract PermitterFactory {
   // ========== STORAGE ==========
 
   /// @notice The Permitter implementation contract
-  address public immutable implementation;
+  address public immutable IMPLEMENTATION;
 
   /// @notice Registry of deployed permitters
   mapping(address permitter => bool isValid) public isPermitter;
@@ -27,7 +27,9 @@ contract PermitterFactory {
   /// @param permitter The address of the new permitter
   /// @param creator The address that created the permitter
   /// @param auction The CCA auction this permitter validates
-  event PermitterCreated(address indexed permitter, address indexed creator, address indexed auction);
+  event PermitterCreated(
+    address indexed permitter, address indexed creator, address indexed auction
+  );
 
   // ========== ERRORS ==========
 
@@ -38,7 +40,7 @@ contract PermitterFactory {
 
   /// @notice Deploys the factory and creates the Permitter implementation
   constructor() {
-    implementation = address(new Permitter());
+    IMPLEMENTATION = address(new Permitter());
   }
 
   // ========== EXTERNAL FUNCTIONS ==========
@@ -50,7 +52,7 @@ contract PermitterFactory {
     if (config.auction == address(0)) revert ZeroAddress();
 
     // Clone the implementation
-    permitter = implementation.clone();
+    permitter = IMPLEMENTATION.clone();
 
     // Initialize the clone
     Permitter(permitter).initialize(msg.sender, config);
@@ -66,13 +68,13 @@ contract PermitterFactory {
   /// @param config The configuration for the permitter
   /// @param salt The salt for deterministic deployment
   /// @return permitter The address of the new permitter
-  function createPermitterDeterministic(
-    Permitter.Config calldata config,
-    bytes32 salt
-  ) external returns (address permitter) {
+  function createPermitterDeterministic(Permitter.Config calldata config, bytes32 salt)
+    external
+    returns (address permitter)
+  {
     if (config.auction == address(0)) revert ZeroAddress();
 
-    permitter = implementation.cloneDeterministic(salt);
+    permitter = IMPLEMENTATION.cloneDeterministic(salt);
     Permitter(permitter).initialize(msg.sender, config);
     isPermitter[permitter] = true;
     _permittersByCreator[msg.sender].push(permitter);
@@ -84,13 +86,17 @@ contract PermitterFactory {
   /// @param salt The salt that would be used for deployment
   /// @return predicted The predicted address
   function predictPermitterAddress(bytes32 salt) external view returns (address predicted) {
-    return implementation.predictDeterministicAddress(salt);
+    return IMPLEMENTATION.predictDeterministicAddress(salt);
   }
 
   /// @notice Gets all permitters created by an address
   /// @param creator The creator address
   /// @return permitters Array of permitter addresses
-  function getPermittersByCreator(address creator) external view returns (address[] memory permitters) {
+  function getPermittersByCreator(address creator)
+    external
+    view
+    returns (address[] memory permitters)
+  {
     return _permittersByCreator[creator];
   }
 }

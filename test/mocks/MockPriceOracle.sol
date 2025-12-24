@@ -47,7 +47,13 @@ contract MockPriceOracle is AggregatorV3Interface {
     external
     view
     override
-    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 _updatedAt, uint80 answeredInRound)
+    returns (
+      uint80 roundId,
+      int256 answer,
+      uint256 startedAt,
+      uint256 _updatedAt,
+      uint80 answeredInRound
+    )
   {
     return (_roundId, price, updatedAt, updatedAt, _roundId);
   }
@@ -57,7 +63,13 @@ contract MockPriceOracle is AggregatorV3Interface {
     external
     view
     override
-    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 _updatedAt, uint80 answeredInRound)
+    returns (
+      uint80 roundId,
+      int256 answer,
+      uint256 startedAt,
+      uint256 _updatedAt,
+      uint80 answeredInRound
+    )
   {
     return (1, price, updatedAt, updatedAt, 1);
   }

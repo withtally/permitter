@@ -57,21 +57,15 @@ contract MockPolicyEngine is IPolicyEngine {
   }
 
   function _checkPolicy(Payload memory payload) internal view returns (PolicyResult) {
-    if (allowAll) {
-      return PolicyResult.Allowed;
-    }
+    if (allowAll) return PolicyResult.Allowed;
 
     // Check if address is blocked
-    if (blockedAddresses[payload.sender]) {
-      return PolicyResult.None;
-    }
+    if (blockedAddresses[payload.sender]) return PolicyResult.None;
 
     // Check if CCID is blocked
     if (payload.calldata_.length > 0) {
       bytes32 ccid = abi.decode(payload.calldata_, (bytes32));
-      if (blockedCCIDs[ccid]) {
-        return PolicyResult.None;
-      }
+      if (blockedCCIDs[ccid]) return PolicyResult.None;
     }
 
     return PolicyResult.Allowed;

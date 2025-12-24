@@ -18,12 +18,9 @@ contract MockCCA {
   }
 
   /// @notice Simulates a bid submission that calls the validation hook
-  function submitBid(
-    uint256 maxPrice,
-    uint128 amount,
-    address bidOwner,
-    bytes calldata hookData
-  ) external {
+  function submitBid(uint256 maxPrice, uint128 amount, address bidOwner, bytes calldata hookData)
+    external
+  {
     // Call validation hook before processing bid
     validationHook.validate(maxPrice, amount, bidOwner, msg.sender, hookData);
 

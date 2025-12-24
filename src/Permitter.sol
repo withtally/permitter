@@ -9,8 +9,9 @@ import {IPolicyEngine} from "./interfaces/IPolicyEngine.sol";
 import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
 
 /// @title Permitter
-/// @notice Validation hook for CCA auctions with sanctions, purchase limits, and allowlist enforcement
-/// @dev Implements IValidationHook and integrates with Chainlink ACE Policy Engine and CCID
+/// @notice Validation hook for CCA auctions with sanctions, purchase limits, and allowlist
+/// enforcement @dev Implements IValidationHook and integrates with Chainlink ACE Policy Engine and
+/// CCID
 contract Permitter is IValidationHook, Initializable {
   // ========== CONSTANTS ==========
 
@@ -101,7 +102,9 @@ contract Permitter is IValidationHook, Initializable {
   // ========== EVENTS ==========
 
   /// @notice Emitted when permitter is initialized
-  event Initialized(address indexed auction, address indexed owner, uint256 perUserLimitUsd, uint256 globalCapUsd);
+  event Initialized(
+    address indexed auction, address indexed owner, uint256 perUserLimitUsd, uint256 globalCapUsd
+  );
 
   /// @notice Emitted when a bid is successfully validated
   event BidValidated(
@@ -170,28 +173,22 @@ contract Permitter is IValidationHook, Initializable {
   /// @param bidOwner Address receiving purchased tokens or refunds (the buyer)
   /// @param hookData Merkle proof if allowlist is required
   /// @dev Reverts if validation fails
-  function validate(
-    uint256,
-    uint128 amount,
-    address bidOwner,
-    address,
-    bytes calldata hookData
-  ) external override whenNotPaused {
+  function validate(uint256, uint128 amount, address bidOwner, address, bytes calldata hookData)
+    external
+    override
+    whenNotPaused
+  {
     // Only allow calls from the auction contract
     if (msg.sender != auction) revert NotFromAuction();
 
     // Check allowlist if required
-    if (requireAllowlist) {
-      _checkAllowlist(bidOwner, hookData);
-    }
+    if (requireAllowlist) _checkAllowlist(bidOwner, hookData);
 
     // Get the user's CCID
     bytes32 ccid = _getCCID(bidOwner);
 
     // Check sanctions via Policy Engine if required
-    if (requireSanctionsCheck) {
-      _checkSanctions(bidOwner, ccid);
-    }
+    if (requireSanctionsCheck) _checkSanctions(bidOwner, ccid);
 
     // Convert bid amount to USD
     uint256 amountUsd = _convertToUsd(amount);
@@ -205,18 +202,14 @@ contract Permitter is IValidationHook, Initializable {
     // Update state
     _recordPurchase(bidOwner, ccid, amountUsd);
 
-    emit BidValidated(
-      bidOwner, ccid, amountUsd, _getUserTotal(bidOwner, ccid), totalPurchasesUsd
-    );
+    emit BidValidated(bidOwner, ccid, amountUsd, _getUserTotal(bidOwner, ccid), totalPurchasesUsd);
   }
 
   // ========== INTERNAL FUNCTIONS ==========
 
   /// @notice Gets the CCID for a user
   function _getCCID(address user) internal view returns (bytes32) {
-    if (address(identityRegistry) == address(0)) {
-      return bytes32(0);
-    }
+    if (address(identityRegistry) == address(0)) return bytes32(0);
     return identityRegistry.getIdentity(user);
   }
 
@@ -234,36 +227,25 @@ contract Permitter is IValidationHook, Initializable {
     bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user))));
 
     // Verify the proof
-    if (!MerkleProof.verify(proof, merkleRoot, leaf)) {
-      revert NotOnAllowlist(user);
-    }
+    if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert NotOnAllowlist(user);
   }
 
   /// @notice Checks sanctions status via Policy Engine
   function _checkSanctions(address user, bytes32 ccid) internal view {
     // If no CCID and sanctions required, revert
-    if (ccid == bytes32(0)) {
-      revert NoCCIDRegistered(user);
-    }
+    if (ccid == bytes32(0)) revert NoCCIDRegistered(user);
 
     // If no policy engine configured, skip
-    if (address(policyEngine) == address(0)) {
-      return;
-    }
+    if (address(policyEngine) == address(0)) return;
 
     // Build payload for policy engine
     IPolicyEngine.Payload memory payload = IPolicyEngine.Payload({
-      selector: this.validate.selector,
-      sender: user,
-      calldata_: abi.encode(ccid),
-      context: ""
+      selector: this.validate.selector, sender: user, calldata_: abi.encode(ccid), context: ""
     });
 
     // Check policy - this will revert if policy rejects
     IPolicyEngine.PolicyResult result = policyEngine.check(payload);
-    if (result == IPolicyEngine.PolicyResult.None) {
-      revert PolicyCheckFailed(user, ccid);
-    }
+    if (result == IPolicyEngine.PolicyResult.None) revert PolicyCheckFailed(user, ccid);
   }
 
   /// @notice Converts bid amount to USD using price oracle
@@ -273,12 +255,7 @@ contract Permitter is IValidationHook, Initializable {
       return _scaleToUsd(uint256(amount), bidTokenDecimals);
     }
 
-    (
-      ,
-      int256 price,
-      ,
-      uint256 updatedAt,
-    ) = priceOracle.latestRoundData();
+    (, int256 price,, uint256 updatedAt,) = priceOracle.latestRoundData();
 
     // Validate price data
     if (price <= 0) revert InvalidPriceData();
@@ -318,9 +295,7 @@ contract Permitter is IValidationHook, Initializable {
 
   /// @notice Gets the total purchases for a user
   function _getUserTotal(address user, bytes32 ccid) internal view returns (uint256) {
-    if (ccid != bytes32(0)) {
-      return userPurchasesUsd[ccid];
-    }
+    if (ccid != bytes32(0)) return userPurchasesUsd[ccid];
     return addressPurchasesUsd[user];
   }
 
@@ -333,11 +308,8 @@ contract Permitter is IValidationHook, Initializable {
 
   /// @notice Records a purchase
   function _recordPurchase(address user, bytes32 ccid, uint256 amountUsd) internal {
-    if (ccid != bytes32(0)) {
-      userPurchasesUsd[ccid] += amountUsd;
-    } else {
-      addressPurchasesUsd[user] += amountUsd;
-    }
+    if (ccid != bytes32(0)) userPurchasesUsd[ccid] += amountUsd;
+    else addressPurchasesUsd[user] += amountUsd;
     totalPurchasesUsd += amountUsd;
   }
 

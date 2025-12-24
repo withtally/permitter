@@ -14,6 +14,6 @@ contract Deploy is Script {
     factory = new PermitterFactory();
 
     console2.log("PermitterFactory deployed at:", address(factory));
-    console2.log("Permitter implementation at:", factory.implementation());
+    console2.log("Permitter implementation at:", factory.IMPLEMENTATION());
   }
 }

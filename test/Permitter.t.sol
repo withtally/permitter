@@ -133,6 +133,48 @@ contract Initialize is PermitterTest {
     vm.expectRevert();
     permitter.initialize(owner, config);
   }
+
+  function test_RevertIf_ZeroOwner() public {
+    // Deploy a fresh Permitter (not through factory)
+    Permitter freshPermitter = new Permitter();
+
+    Permitter.Config memory config = Permitter.Config({
+      auction: address(cca),
+      identityRegistry: address(0),
+      policyEngine: address(0),
+      priceOracle: address(0),
+      merkleRoot: bytes32(0),
+      perUserLimitUsd: 0,
+      globalCapUsd: 0,
+      bidTokenDecimals: 18,
+      requireSanctionsCheck: false,
+      requireAllowlist: false
+    });
+
+    vm.expectRevert(Permitter.ZeroAddress.selector);
+    freshPermitter.initialize(address(0), config);
+  }
+
+  function test_RevertIf_ZeroAuction() public {
+    // Deploy a fresh Permitter (not through factory)
+    Permitter freshPermitter = new Permitter();
+
+    Permitter.Config memory config = Permitter.Config({
+      auction: address(0), // Zero auction
+      identityRegistry: address(0),
+      policyEngine: address(0),
+      priceOracle: address(0),
+      merkleRoot: bytes32(0),
+      perUserLimitUsd: 0,
+      globalCapUsd: 0,
+      bidTokenDecimals: 18,
+      requireSanctionsCheck: false,
+      requireAllowlist: false
+    });
+
+    vm.expectRevert(Permitter.ZeroAddress.selector);
+    freshPermitter.initialize(owner, config);
+  }
 }
 
 // ========== VALIDATION TESTS ==========
@@ -273,7 +315,9 @@ contract PerUserLimit is PermitterTest {
 
     vm.prank(bidder1);
     vm.expectRevert(
-      abi.encodeWithSelector(Permitter.PerUserLimitExceeded.selector, 3000e18, PER_USER_LIMIT, 8000e18)
+      abi.encodeWithSelector(
+        Permitter.PerUserLimitExceeded.selector, 3000e18, PER_USER_LIMIT, 8000e18
+      )
     );
     cca.submitBid(1e18, 3000e18, bidder1, "");
   }
@@ -298,7 +342,9 @@ contract PerUserLimit is PermitterTest {
     // Third bid should exceed limit
     vm.prank(bidder1);
     vm.expectRevert(
-      abi.encodeWithSelector(Permitter.PerUserLimitExceeded.selector, 2000e18, PER_USER_LIMIT, 9000e18)
+      abi.encodeWithSelector(
+        Permitter.PerUserLimitExceeded.selector, 2000e18, PER_USER_LIMIT, 9000e18
+      )
     );
     cca.submitBid(1e18, 2000e18, bidder1, "");
   }
@@ -379,7 +425,9 @@ contract GlobalCap is PermitterTest {
     cca.submitBid(1e18, 15_000e18, bidder1, "");
 
     vm.prank(bidder2);
-    vm.expectRevert(abi.encodeWithSelector(Permitter.GlobalCapExceeded.selector, 10_000e18, 20_000e18, 15_000e18));
+    vm.expectRevert(
+      abi.encodeWithSelector(Permitter.GlobalCapExceeded.selector, 10_000e18, 20_000e18, 15_000e18)
+    );
     cca.submitBid(1e18, 10_000e18, bidder2, "");
   }
 }
@@ -427,9 +475,7 @@ contract PriceConversion is PermitterTest {
     priceOracle.setUpdatedAt(staleTime);
 
     vm.prank(bidder1);
-    vm.expectRevert(
-      abi.encodeWithSelector(Permitter.StalePriceData.selector, staleTime, 3600)
-    );
+    vm.expectRevert(abi.encodeWithSelector(Permitter.StalePriceData.selector, staleTime, 3600));
     cca.submitBid(1e18, 1000e18, bidder1, "");
   }
 
@@ -455,6 +501,33 @@ contract PriceConversion is PermitterTest {
     // Bid 1000 USDC (6 decimals) should scale to 18 decimals
     vm.prank(bidder1);
     cca.submitBid(1e18, 1000e6, bidder1, "");
+
+    assertEq(p.getUserPurchases(bidder1), 1000e18);
+  }
+
+  function test_WorksWithHighDecimalToken() public {
+    // Create permitter without price oracle and a token with >18 decimals
+    Permitter.Config memory config = Permitter.Config({
+      auction: address(cca),
+      identityRegistry: address(identityRegistry),
+      policyEngine: address(policyEngine),
+      priceOracle: address(0), // No oracle
+      merkleRoot: bytes32(0),
+      perUserLimitUsd: PER_USER_LIMIT,
+      globalCapUsd: GLOBAL_CAP,
+      bidTokenDecimals: 24, // Token with 24 decimals
+      requireSanctionsCheck: true,
+      requireAllowlist: false
+    });
+
+    vm.prank(owner);
+    Permitter p = Permitter(factory.createPermitter(config));
+    cca.setValidationHook(address(p));
+
+    // Bid 1000 tokens (24 decimals) should scale to 18 decimals (divide by 1e6)
+    // 1000 * 1e24 / 1e6 = 1000e18
+    vm.prank(bidder1);
+    cca.submitBid(1e18, 1000e24, bidder1, "");
 
     assertEq(p.getUserPurchases(bidder1), 1000e18);
   }
@@ -627,6 +700,30 @@ contract AdminFunctions is PermitterTest {
     vm.prank(owner);
     vm.expectRevert(Permitter.ZeroAddress.selector);
     permitter.transferOwnership(address(0));
+  }
+
+  function test_SetGlobalCap_RevertIf_NotOwner() public {
+    vm.prank(bidder1);
+    vm.expectRevert(Permitter.Unauthorized.selector);
+    permitter.setGlobalCap(100_000_000e18);
+  }
+
+  function test_SetMerkleRoot_RevertIf_NotOwner() public {
+    vm.prank(bidder1);
+    vm.expectRevert(Permitter.Unauthorized.selector);
+    permitter.setMerkleRoot(keccak256("new-root"));
+  }
+
+  function test_SetPaused_RevertIf_NotOwner() public {
+    vm.prank(bidder1);
+    vm.expectRevert(Permitter.Unauthorized.selector);
+    permitter.setPaused(true);
+  }
+
+  function test_TransferOwnership_RevertIf_NotOwner() public {
+    vm.prank(bidder1);
+    vm.expectRevert(Permitter.Unauthorized.selector);
+    permitter.transferOwnership(bidder1);
   }
 }
 

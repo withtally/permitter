@@ -32,11 +32,11 @@ contract PermitterFactoryTest is Test {
 
 contract Constructor is PermitterFactoryTest {
   function test_DeploysImplementation() public view {
-    assertNotEq(factory.implementation(), address(0));
+    assertNotEq(factory.IMPLEMENTATION(), address(0));
   }
 
   function test_ImplementationIsPermitter() public view {
-    Permitter impl = Permitter(factory.implementation());
+    Permitter impl = Permitter(factory.IMPLEMENTATION());
     // Implementation should exist and be a Permitter
     assertEq(impl.owner(), address(0)); // Not initialized
   }
