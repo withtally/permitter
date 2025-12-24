@@ -1,14 +1,19 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 // slither-disable-start reentrancy-benign
 
 pragma solidity 0.8.30;
 
-import {Script} from "forge-std/Script.sol";
-import {Counter} from "src/Counter.sol";
+import {Script, console2} from "forge-std/Script.sol";
+import {PermitterFactory} from "src/PermitterFactory.sol";
 
+/// @title Deploy
+/// @notice Deployment script for PermitterFactory
 contract Deploy is Script {
-  function run() public returns (Counter _counter) {
+  function run() public returns (PermitterFactory factory) {
     vm.broadcast();
-    _counter = new Counter();
+    factory = new PermitterFactory();
+
+    console2.log("PermitterFactory deployed at:", address(factory));
+    console2.log("Permitter implementation at:", factory.implementation());
   }
 }
