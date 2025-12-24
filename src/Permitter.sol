@@ -255,6 +255,7 @@ contract Permitter is IValidationHook, Initializable {
       return _scaleToUsd(uint256(amount), bidTokenDecimals);
     }
 
+    // slither-disable-next-line unused-return
     (, int256 price,, uint256 updatedAt,) = priceOracle.latestRoundData();
 
     // Validate price data

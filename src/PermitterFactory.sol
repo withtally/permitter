@@ -48,6 +48,7 @@ contract PermitterFactory {
   /// @notice Creates a new Permitter for an auction
   /// @param config The configuration for the permitter
   /// @return permitter The address of the new permitter
+  // slither-disable-next-line reentrancy-benign,reentrancy-events
   function createPermitter(Permitter.Config calldata config) external returns (address permitter) {
     if (config.auction == address(0)) revert ZeroAddress();
 
@@ -68,6 +69,7 @@ contract PermitterFactory {
   /// @param config The configuration for the permitter
   /// @param salt The salt for deterministic deployment
   /// @return permitter The address of the new permitter
+  // slither-disable-next-line reentrancy-benign,reentrancy-events
   function createPermitterDeterministic(Permitter.Config calldata config, bytes32 salt)
     external
     returns (address permitter)
